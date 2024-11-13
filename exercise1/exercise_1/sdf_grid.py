@@ -13,7 +13,7 @@ def sdf_grid(sdf_function, resolution):
     """
 
     # ###############
-    grid_size = .33
+    grid_size = .5
     cell_size = (grid_size * 2) / resolution
     i_to_point = np.mgrid[-grid_size:grid_size:cell_size]
     grid = np.zeros((resolution, resolution, resolution))

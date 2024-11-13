@@ -168,13 +168,8 @@ def marching_cubes(sdf: np.array) -> tuple:
     :return: A tuple with (1) a numpy array of vertices (nx3) and (2) a numpy array of faces (mx3)
     """
 
-    # ###############
-    edge_index = [((0,0,0), (1,0,0)), ((1,0,0), (1,1,0)), ((1,1,0), (0,1,0)), ((0,1,0), (0,0,0)),
-             ((0,0,1), (1,0,1)), ((1,0,1), (1,1,1)), ((1,1,1), (0,1,1)), ((0,1,1), (0,0,1)),
-             ((0,0,0), (0,0,1)), ((1,0,0), (1,0,1)), ((1,1,0), (1,1,1)), ((0,1,0), (0,1,1)),
-            ]
-
-
+    cube = np.array([(0,0,0),(1,0,0),(1,1,0),(0,1,0),(0,0,1),(1,0,1),(1,1,1),(0,1,1)])
+    edge_index = np.array([(0,1),(1,2),(2,3),(3,0),(4,5),(5,6),(6,7),(7,4),(0,4),(1,5),(2,6),(3,7)])
 
     vertices = []
     faces = []
@@ -182,19 +177,24 @@ def marching_cubes(sdf: np.array) -> tuple:
     for x in range(resolution-1):
         for y in range(resolution-1):
             for z in range(resolution-1):
-                cube=[sdf[x,y,z], sdf[x+1,y,z], sdf[x+1,y+1,z], sdf[x,y+1,z], sdf[x,y,z], sdf[x+1,y,z], sdf[x+1,y+1,z], sdf[x,y+1,z]]
-                edges = triangle_table[compute_cube_index(cube)]
+                cube_coords = np.tile(np.array([(x,y,z)]),(8,1) )
+                cube_coords = np.add(cube_coords,cube)
+                cube_sdf = [sdf[tuple(coords)] for coords in cube_coords[::-1]]
+                edges = triangle_table[compute_cube_index(cube_sdf)]
                 last_verts = []
                 for i in range(len(edges)):
-                    if edges[i]<0:continue
-                    p_0 = np.array([x,y,z])
-                    p_1 = np.add(p_0,edge_index[edges[i]][0])
-                    p_2 = np.add(p_0,edge_index[edges[i]][1])
+                    if edges[i]<0:break
+                    cube_p1, cube_p2 = edge_index[edges[i]]
+                    p_1 = cube_coords[cube_p1]
+                    p_2 = cube_coords[cube_p2]
                     vert = vertex_interpolation(p_1, p_2, sdf[tuple(p_1)], sdf[tuple(p_2)])
-                    vertices.append(vert)
-                    last_verts.append(len(vertices)-1)
-
-                    for vert in last_verts:faces.append(vert)
+                    last_verts.append(vert)
+                    #Every time 3 vertices have been added they are combined to a face
+                    if len(last_verts)==3:
+                        vert_index = len(vertices)
+                        faces.append([vert_index,vert_index+1,vert_index+2])
+                        for vert in last_verts:vertices.append(vert)
+                        last_verts = []
 
     return np.array(vertices), np.array([faces])
 
@@ -210,7 +210,8 @@ def vertex_interpolation(p_1, p_2, v_1, v_2, isovalue=0.):
     :param isovalue: The iso value, always 0 in our case
     :return: A single point
     """
-    return p_1 + (p_2 - p_1) / 2.
+
     # ###############
-    # TODO: Implement the vertex interpolation to have smoother surfaces
+    alpha = -v_1/(v_2-v_1)
+    return p_1 + (p_2-p_1)*alpha
     # ###############
