@@ -13,6 +13,16 @@ def sdf_grid(sdf_function, resolution):
     """
 
     # ###############
-    # TODO: Implement
-    raise NotImplementedError
+    grid_size = .33
+    cell_size = (grid_size * 2) / resolution
+    i_to_point = np.mgrid[-grid_size:grid_size:cell_size]
+    grid = np.zeros((resolution, resolution, resolution))
+    for x in range(resolution):
+        for y in range(resolution):
+            x_values = np.full_like(i_to_point, i_to_point[x])
+            y_values = np.full_like(i_to_point, i_to_point[y])
+
+            vals = sdf_function(x_values, y_values, i_to_point)
+            grid[x][y] = vals
+    return grid
     # ###############

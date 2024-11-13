@@ -149,8 +149,12 @@ def compute_cube_index(cube: np.array, isolevel=0.) -> int:
     """
 
     # ###############
-    # TODO: Implement
-    raise NotImplementedError
+    index = 0
+    for corner in cube:
+        index = index << 1
+        if corner < 0:
+            index += 1
+    return index
     # ###############
 
 
@@ -165,10 +169,36 @@ def marching_cubes(sdf: np.array) -> tuple:
     """
 
     # ###############
-    # TODO: Implement
-    raise NotImplementedError
-    # ###############
+    edge_index = [((0,0,0), (1,0,0)), ((1,0,0), (1,1,0)), ((1,1,0), (0,1,0)), ((0,1,0), (0,0,0)),
+             ((0,0,1), (1,0,1)), ((1,0,1), (1,1,1)), ((1,1,1), (0,1,1)), ((0,1,1), (0,0,1)),
+             ((0,0,0), (0,0,1)), ((1,0,0), (1,0,1)), ((1,1,0), (1,1,1)), ((0,1,0), (0,1,1)),
+            ]
 
+
+
+    vertices = []
+    faces = []
+    resolution = sdf.shape[0]
+    for x in range(resolution-1):
+        for y in range(resolution-1):
+            for z in range(resolution-1):
+                cube=[sdf[x,y,z], sdf[x+1,y,z], sdf[x+1,y+1,z], sdf[x,y+1,z], sdf[x,y,z], sdf[x+1,y,z], sdf[x+1,y+1,z], sdf[x,y+1,z]]
+                edges = triangle_table[compute_cube_index(cube)]
+                last_verts = []
+                for i in range(len(edges)):
+                    if edges[i]<0:continue
+                    p_0 = np.array([x,y,z])
+                    p_1 = np.add(p_0,edge_index[edges[i]][0])
+                    p_2 = np.add(p_0,edge_index[edges[i]][1])
+                    vert = vertex_interpolation(p_1, p_2, sdf[tuple(p_1)], sdf[tuple(p_2)])
+                    vertices.append(vert)
+                    last_verts.append(len(vertices)-1)
+
+                    for vert in last_verts:faces.append(vert)
+
+    return np.array(vertices), np.array([faces])
+
+    # ###############
 
 def vertex_interpolation(p_1, p_2, v_1, v_2, isovalue=0.):
     """
